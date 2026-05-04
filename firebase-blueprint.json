@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "organization": {
+      "title": "Organization",
+      "description": "Uma igreja e seu respectivo ministério de louvor.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome da Igreja" },
+        "phone": { "type": "string" },
+        "responsible": { "type": "string", "description": "Responsável pela Igreja" },
+        "address": {
+          "type": "object",
+          "properties": {
+            "cep": { "type": "string" },
+            "street": { "type": "string" },
+            "neighborhood": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "number": { "type": "string" }
+          }
+        },
+        "ministry": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "acronym": { "type": "string" },
+            "description": { "type": "string" },
+            "leaderName": { "type": "string" }
+          }
+        },
+        "slug": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug", "ownerId"]
+    },
+    "member": {
+      "title": "Member",
+      "description": "Membership data.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string" },
+        "organizationId": { "type": "string" }
+      }
+    },
+    "song": {
+      "title": "Song",
+      "description": "Song data.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "bpm": { "type": "number" },
+        "key": { "type": "string" },
+        "url": { "type": "string" },
+        "organizationId": { "type": "string" }
+      }
+    },
+    "event": {
+      "title": "Event",
+      "description": "Event data.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "organizationId": { "type": "string" }
+      }
+    },
+    "message": {
+      "title": "Message",
+      "description": "Message data.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "organizationId": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/organizations/{orgId}": { "schema": "organization", "description": "Organizations" },
+    "/organizations/{orgId}/members/{memberId}": { "schema": "member", "description": "Members" },
+    "/organizations/{orgId}/songs/{songId}": { "schema": "song", "description": "Songs" },
+    "/organizations/{orgId}/events/{eventId}": { "schema": "event", "description": "Events" },
+    "/organizations/{orgId}/messages/{msgId}": { "schema": "message", "description": "Messages" },
+    "/users/{userId}": { "schema": { "type": "object" }, "description": "Users" }
+  }
+}
