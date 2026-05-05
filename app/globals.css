@@ -1,2 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-roboto: var(--font-roboto);
+
+  --color-church-dark: #1C1D21;
+  --color-church-primary: #FFD2A4;
+  --color-church-cream: #FFF5EB;
+  --color-church-gray: #F4F4F4;
+}

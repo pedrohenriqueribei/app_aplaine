@@ -11,7 +11,7 @@ interface ContextType { currentOrg: Organization | null; userRole: string | null
 const OrgContext = createContext<ContextType>({ currentOrg: null, userRole: null, loading: true });
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin: isSuperAdmin } = useAuth();
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,15 +21,38 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       setCurrentOrg(null); setUserRole(null); setLoading(false); return;
     }
     const orgId = profile.currentOrganizationId;
-    const unsubOrg = onSnapshot(doc(db, 'organizations', orgId), (d) => {
-      if (d.exists()) setCurrentOrg({ id: d.id, ...d.data() } as Organization);
+    const unsubOrg = onSnapshot(doc(db, 'organizations', orgId), {
+      next: (d) => {
+        if (d.exists()) setCurrentOrg({ id: d.id, ...d.data() } as Organization);
+      },
+      error: (err) => {
+        console.error("Organization fetch error:", err);
+        setLoading(false);
+      }
     });
-    const unsubMem = onSnapshot(doc(db, 'organizations', orgId, 'members', user.uid), (d) => {
-      if (d.exists()) setUserRole(d.data().role);
-      setLoading(false);
+
+    const unsubMem = onSnapshot(doc(db, 'organizations', orgId, 'members', user.uid), {
+      next: (d) => {
+        if (d.exists()) {
+          setUserRole(d.data().role);
+        } else if (isSuperAdmin) {
+          setUserRole('ADMIN');
+        } else {
+          setUserRole(null);
+        }
+        setLoading(false);
+      },
+      error: (err) => {
+        if (isSuperAdmin) {
+          setUserRole('ADMIN');
+        } else {
+          console.error("Member role fetch error:", err);
+        }
+        setLoading(false);
+      }
     });
     return () => { unsubOrg(); unsubMem(); };
-  }, [user, profile?.currentOrganizationId]);
+  }, [user, profile?.currentOrganizationId, isSuperAdmin]);
 
   return <OrgContext.Provider value={{ currentOrg, userRole, loading }}>{children}</OrgContext.Provider>;
 }

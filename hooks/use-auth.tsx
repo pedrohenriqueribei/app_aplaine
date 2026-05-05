@@ -33,33 +33,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
-        const ref = doc(db, 'users', u.uid);
-        const snap = await getDoc(ref);
-        
-        // Verificando se é admin global (super admin)
-        const adminRef = doc(db, 'admins', u.uid);
-        const adminSnap = await getDoc(adminRef);
-        setIsAdmin(adminSnap.exists());
+      try {
+        setUser(u);
+        if (u) {
+          // Listen for admin status
+          const adminRef = doc(db, 'admins', u.uid);
+          const unsubAdmin = onSnapshot(adminRef, {
+            next: (snap) => setIsAdmin(snap.exists()),
+            error: (err) => console.error("Admin status check error:", err)
+          });
 
-        if (!snap.exists()) {
-          const p = { 
-            email: u.email, 
-            displayName: u.displayName || u.email?.split('@')[0], 
-            photoURL: u.photoURL, 
-            createdAt: new Date().toISOString() 
-          };
-          await setDoc(ref, p);
-          setProfile(p);
-        } else {
-          onSnapshot(ref, (d) => setProfile(d.data()));
+          const ref = doc(db, 'users', u.uid);
+          const snap = await getDoc(ref);
+          
+          if (!snap.exists()) {
+            const p = { 
+              email: u.email, 
+              displayName: u.displayName || u.email?.split('@')[0], 
+              photoURL: u.photoURL, 
+              createdAt: new Date().toISOString() 
+            };
+            await setDoc(ref, p);
+            setProfile(p);
+          } else {
+            setProfile(snap.data());
+            onSnapshot(ref, {
+              next: (d) => setProfile(d.data()),
+              error: (err) => console.error("Profile sync error:", err)
+            });
+          }
+          // Note: we don't return unsubAdmin here because the parent unsub will handle the logout case
+        } else { 
+          setProfile(null); 
+          setIsAdmin(false);
         }
-      } else { 
-        setProfile(null); 
-        setIsAdmin(false);
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => unsub();
   }, []);

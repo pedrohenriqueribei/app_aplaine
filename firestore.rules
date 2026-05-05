@@ -6,15 +6,23 @@ service cloud.firestore {
     function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     function isOrgMember(orgId) { return isSignedIn() && (exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)) || isAdmin()); }
     
-    match /admins/{adminId} { allow read: if isSignedIn(); }
-    match /users/{userId} { allow get: if isSignedIn(); allow write: if isSignedIn() && request.auth.uid == userId; }
+    match /admins/{adminId} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin() || (request.auth.uid == adminId && (request.auth.token.email == 'pedrohenriqueribei@gmail.com'));
+    }
+    match /users/{userId} { allow read: if isSignedIn(); allow write: if isSignedIn() && request.auth.uid == userId; }
     
     match /organizations/{orgId} {
+      allow list: if isSignedIn(); // We will rely on query filters
       allow get: if isOrgMember(orgId);
       allow create: if isSignedIn();
-      allow update: if isOrgMember(orgId) && (get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role == 'ADMIN' || isAdmin());
+      allow update: if isOrgMember(orgId) && (isAdmin() || get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role == 'ADMIN');
       allow delete: if isAdmin();
-      match /members/{memberId} { allow read: if isOrgMember(orgId); allow write: if isSignedIn(); }
+      
+      match /members/{memberId} { 
+        allow read: if isSignedIn() && (request.auth.uid == memberId || isOrgMember(orgId)); 
+        allow write: if isSignedIn() && (isAdmin() || isOrgMember(orgId)); 
+      }
       match /songs/{songId} { allow read, write: if isOrgMember(orgId); }
       match /events/{eventId} { allow read, write: if isOrgMember(orgId); }
       match /messages/{msgId} { allow read, write: if isOrgMember(orgId); }
